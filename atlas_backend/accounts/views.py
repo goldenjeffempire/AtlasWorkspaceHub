@@ -15,46 +15,64 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
     permission_classes = [permissions.AllowAny]
-    
+
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        
+
         refresh = RefreshToken.for_user(user)
-        
-        return Response({
+
+        response = Response({
             'user': UserSerializer(user).data,
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         }, status=status.HTTP_201_CREATED)
+        response.set_cookie(
+            'jwt',
+            str(refresh),
+            httponly=True,
+            samesite='Lax',
+            secure=False, # Adjust based on your server configuration
+            max_age=86400  # 1 day
+        )
+        return response
 
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
-    
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
-        
+
         user = authenticate(email=email, password=password)
-        
+
         if user is None:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
         if not user.is_active:
             return Response({'error': 'Account is disabled'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
         refresh = RefreshToken.for_user(user)
-        
-        return Response({
+
+        response = Response({
             'user': UserSerializer(user).data,
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         })
+        response.set_cookie(
+            'jwt',
+            str(refresh),
+            httponly=True,
+            samesite='Lax',
+            secure=False, # Adjust based on your server configuration
+            max_age=86400  # 1 day
+        )
+        return response
 
 
 class LogoutView(APIView):
@@ -72,15 +90,15 @@ class LogoutView(APIView):
 class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrSelf]
-    
+
     def get_object(self):
         return self.request.user
-    
+
     def get(self, request, *args, **kwargs):
         user = self.get_object()
         serializer = self.serializer_class(user)
         return Response(serializer.data)
-    
+
     def update(self, request, *args, **kwargs):
         user = self.get_object()
         serializer = self.serializer_class(user, data=request.data, partial=True)

@@ -12,11 +12,8 @@ const api = axios.create({
 
 // Request interceptor to add JWT token from cookies
 api.interceptors.request.use((config) => {
-  const token = getCookie('jwt');
-  
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  // JWT is handled by httpOnly cookies automatically
+  config.credentials = 'include';
   
   return config;
 });

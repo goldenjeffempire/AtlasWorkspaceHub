@@ -20,14 +20,19 @@ export interface TokenPayload {
   role: string;
 }
 
-// Get user from JWT in cookie
-export const getUserFromCookie = (): User | null => {
+// Get user from JWT in httpOnly cookie
+export const getUserFromCookie = async (): Promise<User | null> => {
   try {
-    const token = getCookie('jwt');
+    const response = await fetch('/api/auth/me', {
+      credentials: 'include' // Include httpOnly cookies
+    });
     
-    if (!token) {
+    if (!response.ok) {
       return null;
     }
+    
+    const data = await response.json();
+    return data.user;
     
     const decoded = jwtDecode<TokenPayload>(token.toString());
     
