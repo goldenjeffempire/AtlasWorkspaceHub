@@ -1,0 +1,133 @@
+You are a senior full-stack software engineer. Your task is to build the ATLAS Workspace Booking App — a scalable, modern platform that allows organizations to manage workspaces efficiently across multiple roles and locations.
+
+This platform should support authentication, role-based access, real-time bookings, admin controls, analytics, and a professional landing page. The application must be clean, secure, fully responsive, accessible, and animated using modern web technologies.
+
+💼 Tech Stack
+Frontend:
+
+Next.js 14 (App Router with TypeScript)
+
+Tailwind CSS
+
+shadcn/ui (UI component library)
+
+React Icons
+
+Framer Motion (for transitions/animations)
+
+Backend:
+
+Django + Django REST Framework
+
+JWT Authentication (httpOnly cookies)
+
+PostgreSQL
+
+Optional: Celery (for async tasks like email notifications)
+
+📁 Project Structure
+bash
+Copy
+Edit
+atlas_backend/
+├── accounts/                # User accounts, roles, auth
+├── bookings/                # Workspace booking logic
+├── analytics/               # Reporting and metrics
+├── notifications/           # Email/SMS handling
+├── atlas_config/            # Django config, settings, routing
+
+atlas_frontend/
+├── src/
+│   ├── app/                 # Pages: login, register, dashboard, etc.
+│   ├── components/          # Reusable layout/auth/UI components
+│   ├── lib/                 # Utility functions (auth, axios, api)
+├── public/images/           # Hero illustrations and icons
+🔧 Development Instructions
+You must complete the implementation feature-by-feature. For each feature:
+
+Finish all backend logic (models, serializers, views, urls, permissions).
+
+Build fully functional and styled frontend (pages, components, hooks).
+
+Include exact CLI commands for installing dependencies and setup.
+
+Include detailed configuration files or changes (settings.py, middleware, Tailwind setup, etc.).
+
+Output the exact file structure and file content.
+
+Provide run and test instructions for the feature.
+
+Apply clean code, DRY principles, secure API design, and performance best practices.
+
+✅ Features to Implement
+User Authentication
+
+JWT-based login, registration, logout
+
+Google/LinkedIn OAuth placeholders
+
+Role-based registration with UI (admin, employee, general)
+
+Store tokens in httpOnly cookies
+
+Role-Based Access Control
+
+Roles and permissions in Django
+
+Route protection and dashboard redirection per role
+
+Booking System
+
+Browse, book, cancel, reschedule workspaces
+
+Real-time updates (WebSocket or polling)
+
+Notifications & Reminders
+
+Email reminders for bookings
+
+(Optional) SMS via AWS SNS or Twilio
+
+Reporting & Analytics
+
+Admin charts: occupancy, usage, peak booking times
+
+Data visualizations using Recharts or Chart.js
+
+User Profile Management
+
+View/edit profile
+
+Booking history and notification preferences
+
+UI/UX Enhancements & Animations
+
+Tailwind + shadcn/ui components
+
+Framer Motion for page transitions and microinteractions
+
+Responsive and accessible design
+
+Customizable User Roles (CRUD)
+
+Admin UI to manage roles and assign them to users
+
+Admin Dashboard & Management Tools
+
+Manage users, bookings, workspace types and limits
+
+Landing Page with Brand Story & CTA
+
+Hero section, value proposition, CTA
+
+Animations and storytelling design
+
+📦 Optional Features (Bonus)
+AI-Powered Workspace Recommendations (based on historical usage)
+
+Voice-Based Booking using Web Speech API
+
+Calendar Integration (Google Calendar API)
+
+Payment & Pricing Integration (Stripe)
+
