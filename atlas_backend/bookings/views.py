@@ -1,103 +1,154 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, generics, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from django.db.models import Q
 from datetime import timedelta
-from .models import Workspace, WorkspaceType, Booking
-from .serializers import WorkspaceSerializer, WorkspaceTypeSerializer, BookingSerializer
+from .models import WorkspaceType, Workspace, Booking
+from .serializers import (
+    WorkspaceTypeSerializer,
+    WorkspaceListSerializer,
+    WorkspaceDetailSerializer,
+    WorkspaceCreateUpdateSerializer,
+    BookingListSerializer,
+    BookingDetailSerializer,
+    BookingCreateSerializer,
+    BookingUpdateSerializer
+)
 from accounts.permissions import IsAdmin
+
 
 class WorkspaceTypeViewSet(viewsets.ModelViewSet):
     queryset = WorkspaceType.objects.all()
     serializer_class = WorkspaceTypeSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated(), IsAdmin()]
-        return [permissions.IsAuthenticated()]
+            return [IsAuthenticated(), IsAdmin()]
+        return super().get_permissions()
+
 
 class WorkspaceViewSet(viewsets.ModelViewSet):
-    queryset = Workspace.objects.all()
-    serializer_class = WorkspaceSerializer
+    queryset = Workspace.objects.filter(is_active=True)
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'location', 'floor']
+    ordering_fields = ['name', 'location', 'workspace_type__name']
+    ordering = ['name']
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated(), IsAdmin()]
-        return [permissions.IsAuthenticated()]
+            return [IsAuthenticated(), IsAdmin()]
+        return [IsAuthenticated()]
     
-    @action(detail=False, methods=['get'])
-    def available(self, request):
-        """Return all available workspaces"""
-        now = timezone.now()
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return WorkspaceListSerializer
+        elif self.action in ['create', 'update', 'partial_update']:
+            return WorkspaceCreateUpdateSerializer
+        return WorkspaceDetailSerializer
+    
+    def get_queryset(self):
+        """Filter workspaces based on availability query param"""
+        queryset = super().get_queryset()
+        available_from = self.request.query_params.get('available_from')
+        available_to = self.request.query_params.get('available_to')
         
-        # Optional query parameters
-        start_time = request.query_params.get('start_time', now)
-        end_time = request.query_params.get('end_time', now + timedelta(hours=1))
-        location = request.query_params.get('location')
-        workspace_type = request.query_params.get('type')
+        if available_from and available_to:
+            # Find workspaces that don't have bookings in the specified time range
+            booked_workspace_ids = Booking.objects.filter(
+                start_time__lt=available_to,
+                end_time__gt=available_from,
+                status__in=['pending', 'confirmed']
+            ).values_list('workspace_id', flat=True).distinct()
+            
+            queryset = queryset.exclude(id__in=booked_workspace_ids)
         
-        # Filter workspaces
-        workspaces = Workspace.objects.filter(is_active=True)
-        
-        if location:
-            workspaces = workspaces.filter(location__icontains=location)
-        
-        if workspace_type:
-            workspaces = workspaces.filter(workspace_type__id=workspace_type)
-        
-        # Check availability during the requested time period
-        available_workspaces = []
-        for workspace in workspaces:
-            if workspace.is_available_between(start_time, end_time):
-                available_workspaces.append(workspace)
-        
-        serializer = self.get_serializer(available_workspaces, many=True)
-        return Response(serializer.data)
+        return queryset
+
 
 class BookingViewSet(viewsets.ModelViewSet):
-    serializer_class = BookingSerializer
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['start_time', 'end_time', 'status', 'created_at']
+    ordering = ['-start_time']
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return BookingListSerializer
+        elif self.action == 'create':
+            return BookingCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return BookingUpdateSerializer
+        return BookingDetailSerializer
     
     def get_queryset(self):
         user = self.request.user
-        
-        # Admin can see all bookings
         if user.role == 'admin':
-            return Booking.objects.all()
+            queryset = Booking.objects.all()
+        else:
+            queryset = Booking.objects.filter(user=user)
         
-        # Other users can only see their own bookings
-        return Booking.objects.filter(user=user)
+        # Filter by status
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        
+        # Filter by date range
+        from_date = self.request.query_params.get('from_date')
+        to_date = self.request.query_params.get('to_date')
+        if from_date:
+            queryset = queryset.filter(start_time__gte=from_date)
+        if to_date:
+            queryset = queryset.filter(end_time__lte=to_date)
+        
+        # Filter by workspace
+        workspace_id = self.request.query_params.get('workspace')
+        if workspace_id:
+            queryset = queryset.filter(workspace_id=workspace_id)
+        
+        return queryset
     
-    @action(detail=False, methods=['get'])
-    def mine(self, request):
-        """Return user's bookings"""
-        bookings = Booking.objects.filter(user=request.user)
-        # Optional filter by status
-        status_filter = request.query_params.get('status')
-        if status_filter:
-            bookings = bookings.filter(status=status_filter)
-        
-        # Optional filter by date range
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-        if start_date and end_date:
-            bookings = bookings.filter(start_time__date__range=[start_date, end_date])
-        
-        serializer = self.get_serializer(bookings, many=True)
-        return Response(serializer.data)
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        return context
     
-    @action(detail=True, methods=['patch'])
+    @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
-        """Cancel a booking"""
         booking = self.get_object()
         
-        # Only allow cancellation of pending or confirmed bookings
-        if booking.status not in ['pending', 'confirmed']:
+        if booking.status in ['completed', 'cancelled']:
             return Response(
-                {"detail": "Cannot cancel a booking that is not pending or confirmed"}, 
+                {"error": "Cannot cancel a booking that is already completed or cancelled"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         booking.status = 'cancelled'
         booking.save()
-        serializer = self.get_serializer(booking)
+        
+        return Response(BookingDetailSerializer(booking).data)
+    
+    @action(detail=False, methods=['get'])
+    def upcoming(self, request):
+        now = timezone.now()
+        queryset = self.get_queryset().filter(
+            start_time__gte=now,
+            status='confirmed'
+        ).order_by('start_time')[:5]
+        
+        serializer = BookingListSerializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def today(self, request):
+        today = timezone.now().date()
+        tomorrow = today + timedelta(days=1)
+        
+        queryset = self.get_queryset().filter(
+            start_time__gte=today,
+            start_time__lt=tomorrow,
+            status__in=['confirmed', 'pending']
+        ).order_by('start_time')
+        
+        serializer = BookingListSerializer(queryset, many=True)
         return Response(serializer.data)

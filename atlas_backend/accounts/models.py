@@ -1,5 +1,7 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractUser
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -23,6 +25,7 @@ class UserManager(BaseUserManager):
         
         return self.create_user(email, password, **extra_fields)
 
+
 class User(AbstractUser, PermissionsMixin):
     ROLE_CHOICES = (
         ('admin', 'Admin'),
@@ -40,7 +43,7 @@ class User(AbstractUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     
-    # Profile fields
+    # Additional fields
     phone = models.CharField(max_length=15, blank=True, null=True)
     department = models.CharField(max_length=100, blank=True, null=True)
     profile_image = models.URLField(blank=True, null=True)
@@ -61,6 +64,7 @@ class User(AbstractUser, PermissionsMixin):
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
 
+
 class Role(models.Model):
     """Custom Role model for more dynamic role management"""
     name = models.CharField(max_length=50, unique=True)
@@ -73,6 +77,7 @@ class Role(models.Model):
     can_manage_workspaces = models.BooleanField(default=False)
     can_manage_roles = models.BooleanField(default=False)
     
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
