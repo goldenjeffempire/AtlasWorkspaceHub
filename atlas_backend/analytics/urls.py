@@ -7,7 +7,8 @@ from .views import (
     OccupancyReportView,
     BookingTrendsView,
     UserActivityReportView,
-    WorkspacePopularityView
+    WorkspacePopularityView,
+    PeakHoursView
 )
 
 router = DefaultRouter()
