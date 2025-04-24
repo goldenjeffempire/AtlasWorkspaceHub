@@ -1,10 +1,11 @@
-from rest_framework import viewsets, generics, status, filters
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db.models import Q
 from datetime import timedelta
+
 from .models import WorkspaceType, Workspace, Booking
 from .serializers import (
     WorkspaceTypeSerializer,
@@ -16,31 +17,31 @@ from .serializers import (
     BookingCreateSerializer,
     BookingUpdateSerializer
 )
-from accounts.permissions import IsAdmin
+from accounts.permissions import IsAdmin, IsEmployee, IsLearner, IsGeneral
 
 
 class WorkspaceTypeViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing workspace types
+    """
     queryset = WorkspaceType.objects.all()
     serializer_class = WorkspaceTypeSerializer
     permission_classes = [IsAuthenticated]
     
     def get_permissions(self):
+        """
+        Only admins can create, update, or delete workspace types
+        """
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsAdmin()]
         return super().get_permissions()
 
 
 class WorkspaceViewSet(viewsets.ModelViewSet):
-    queryset = Workspace.objects.filter(is_active=True)
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'location', 'floor']
-    ordering_fields = ['name', 'location', 'workspace_type__name']
-    ordering = ['name']
-    
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsAuthenticated(), IsAdmin()]
-        return [IsAuthenticated()]
+    """
+    API endpoint for managing workspaces
+    """
+    queryset = Workspace.objects.all()
     
     def get_serializer_class(self):
         if self.action == 'list':
@@ -49,30 +50,48 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
             return WorkspaceCreateUpdateSerializer
         return WorkspaceDetailSerializer
     
-    def get_queryset(self):
-        """Filter workspaces based on availability query param"""
-        queryset = super().get_queryset()
-        available_from = self.request.query_params.get('available_from')
-        available_to = self.request.query_params.get('available_to')
+    def get_permissions(self):
+        """
+        Only admins can create, update, or delete workspaces
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAuthenticated(), IsAdmin()]
+        return [IsAuthenticated()]
+    
+    @action(detail=False, methods=['get'])
+    def available(self, request):
+        """
+        Get available workspaces for a specific time range
+        """
+        start_time = request.query_params.get('start_time')
+        end_time = request.query_params.get('end_time')
         
-        if available_from and available_to:
-            # Find workspaces that don't have bookings in the specified time range
-            booked_workspace_ids = Booking.objects.filter(
-                start_time__lt=available_to,
-                end_time__gt=available_from,
-                status__in=['pending', 'confirmed']
-            ).values_list('workspace_id', flat=True).distinct()
-            
-            queryset = queryset.exclude(id__in=booked_workspace_ids)
+        if not start_time or not end_time:
+            return Response(
+                {"error": "Both start_time and end_time parameters are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        return queryset
+        # Find workspaces that don't have bookings in the given time range
+        busy_workspaces = Booking.objects.filter(
+            Q(start_time__lt=end_time) & Q(end_time__gt=start_time),
+            status__in=['pending', 'confirmed']
+        ).values_list('workspace_id', flat=True)
+        
+        available_workspaces = Workspace.objects.filter(
+            is_active=True
+        ).exclude(
+            id__in=busy_workspaces
+        )
+        
+        serializer = WorkspaceListSerializer(available_workspaces, many=True)
+        return Response(serializer.data)
 
 
 class BookingViewSet(viewsets.ModelViewSet):
-    filter_backends = [filters.OrderingFilter]
-    ordering_fields = ['start_time', 'end_time', 'status', 'created_at']
-    ordering = ['-start_time']
-    
+    """
+    API endpoint for managing bookings
+    """
     def get_serializer_class(self):
         if self.action == 'list':
             return BookingListSerializer
@@ -119,6 +138,9 @@ class BookingViewSet(viewsets.ModelViewSet):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         return context
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, status='confirmed')
     
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
