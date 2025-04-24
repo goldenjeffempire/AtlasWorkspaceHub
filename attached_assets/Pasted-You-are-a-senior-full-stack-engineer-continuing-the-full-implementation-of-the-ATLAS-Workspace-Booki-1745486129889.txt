@@ -1,0 +1,277 @@
+You are a senior full-stack engineer continuing the full implementation of the ATLAS Workspace Booking Application, following a clean, modular, and scalable architecture.
+
+The User Authentication feature has already been fully implemented, including:
+
+JWT authentication
+
+Login/Register UI
+
+Role-based signup
+
+Session handling with httpOnly cookies
+
+
+
+---
+
+Tech Stack (Already Set Up)
+
+Frontend:
+
+Next.js 14 (App Router + TypeScript)
+
+Tailwind CSS
+
+shadcn/ui
+
+React Icons
+
+Framer Motion
+
+
+Backend:
+
+Django + Django REST Framework
+
+JWT (httpOnly cookie storage)
+
+PostgreSQL
+
+
+
+---
+
+Instructions (Mandatory for Every Feature)
+
+You must fully complete the current feature before moving on to the next. Each feature must include:
+
+1. Installation & Setup
+
+CLI commands
+
+Required libraries/tools
+
+
+
+2. Backend Code
+
+Models
+
+Serializers
+
+Views
+
+URLs
+
+Permissions
+
+
+
+3. Frontend Code
+
+Pages
+
+Components
+
+Form logic
+
+API hooks
+
+
+
+4. File Placement
+
+Exact file paths in the project structure
+
+
+
+5. Run/Test Instructions
+
+How to run, test, and validate the feature
+
+
+
+6. Professional UI/UX
+
+Tailwind CSS
+
+shadcn/ui
+
+Framer Motion for responsiveness, accessibility, and animation
+
+
+
+
+
+---
+
+Remaining Features to Implement
+
+
+---
+
+2. Role-Based Access Control
+
+Define roles: Admin, Employee, Learner, General
+
+Apply permission classes in Django DRF views
+
+Implement frontend route protection (e.g., withRole.tsx)
+
+Redirect users to the appropriate dashboard after login
+
+
+
+---
+
+3. Reporting & Analytics
+
+Backend endpoints to retrieve metrics:
+
+Occupancy rates
+
+Peak booking hours
+
+Utilization trends by workspace or role
+
+
+Build an admin analytics dashboard
+
+Use a chart library: recharts or chart.js
+
+Include clean visualizations and export options
+
+
+
+---
+
+4. User Profile Management
+
+API endpoints to retrieve and update user profile data
+
+Users can view/edit:
+
+Personal details
+
+Notification preferences
+
+Booking history
+
+
+Create a responsive and user-friendly profile UI in the frontend
+
+
+
+---
+
+5. UI/UX Enhancements & Design System
+
+Create reusable components:
+
+Navbar, Footer, Cards, Modals, Buttons, Inputs
+
+
+Ensure:
+
+Full responsiveness (mobile-first)
+
+Accessibility (keyboard nav, screen-reader ready)
+
+Visual interactivity (Framer Motion transitions)
+
+
+
+
+---
+
+6. Customizable User Roles (CRUD)
+
+Backend:
+
+Endpoints to create, update, delete roles
+
+
+Admin Dashboard:
+
+UI to manage user roles
+
+Assign/reassign users to roles
+
+Validate permissions dynamically
+
+
+
+
+---
+
+7. Admin Dashboard & Workspace Management Tools
+
+Centralized admin interface with:
+
+User list, role assignment tools
+
+Workspace capacity and type controls
+
+Booking oversight and logs
+
+
+Add intuitive navigation and role-sensitive actions
+
+
+
+---
+
+8. Landing Page with Brand Story & CTA
+
+Public home page at /
+
+Hero section with brand story and sign-up CTA
+
+Sections: Features, Solutions, Pricing, Testimonials, Company Values
+
+Smooth animations and modern design (Framer Motion + Tailwind)
+
+
+
+---
+
+Output Format Per Feature
+
+You must structure each implementation in this format:
+
+1. Installation & Setup
+
+
+2. Backend Implementation
+
+
+3. Frontend Implementation
+
+
+4. File Placement
+
+
+5. Run/Test Instructions
+
+
+
+
+
+atlas_backend/
+├── accounts/                 # User management
+├── analytics/               # Reporting & metrics
+├── bookings/                # Booking logic
+├── notifications/           # User alerts
+├── atlas_config/            # Django settings and project config
+├── manage.py, pyproject.toml, requirements.txt
+
+atlas_frontend/
+├── src/
+│   ├── app/                 # Routes: login, register, dashboard, unauthorized
+│   ├── components/
+│   │   ├── auth/            # Auth forms, social buttons, role selector
+│   │   ├── layout/          # Navbar, Footer
+│   │   └── sections/        # Landing page sections: Hero, About, Pricing, etc.
+│   ├── lib/                 # Utilities: API, auth, axios
+├── public/images/           # Static assets
+├── tailwind.config.js, postcss.config.js, next.config.ts, tsconfig.json
