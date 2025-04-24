@@ -2,6 +2,7 @@ from rest_framework import viewsets, generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from accounts.permissions import IsAdmin
 from django.db.models import Count, Sum, F, Q, Avg
 from django.db.models.functions import ExtractHour
 from django.utils import timezone

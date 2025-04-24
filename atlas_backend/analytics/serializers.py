@@ -35,6 +35,11 @@ class WorkspaceOccupancySerializer(serializers.Serializer):
     total_hours_booked = serializers.FloatField()
     total_bookings = serializers.IntegerField()
 
+class PeakHoursSerializer(serializers.Serializer):
+    hour = serializers.IntegerField()
+    total_bookings = serializers.IntegerField()
+    occupancy_rate = serializers.FloatField(allow_null=True)
+
 
 class BookingTrendSerializer(serializers.Serializer):
     date = serializers.DateField()
