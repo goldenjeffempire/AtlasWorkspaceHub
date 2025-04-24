@@ -38,9 +38,13 @@ class DashboardView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        """Provide key metrics for dashboard display"""
-        # If user is not admin, show only their data
+        """Provide key metrics for dashboard display with role-based data access"""
         user = request.user
+        
+        # Common metrics calculation
+        today = timezone.now().date()
+        start_of_month = date(today.year, today.month, 1)
+        end_of_month = date(today.year + 1, 1, 1) if today.month == 12 else date(today.year, today.month + 1, 1)
         
         # Calculate date ranges
         today = timezone.now().date()
@@ -383,4 +387,33 @@ class WorkspacePopularityView(APIView):
         popularity_data.sort(key=lambda x: x['total_bookings'], reverse=True)
         
         serializer = WorkspacePopularitySerializer(popularity_data, many=True)
+        return Response(serializer.data)
+class PeakHoursView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    
+    def get(self, request):
+        """Get peak hour analysis data"""
+        # Get date range parameters
+        start_date = request.query_params.get('start_date', 
+            (timezone.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+        end_date = request.query_params.get('end_date', 
+            timezone.now().strftime('%Y-%m-%d'))
+        
+        # Convert to datetime objects
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        # Query bookings and group by hour
+        bookings_by_hour = Booking.objects.filter(
+            start_time__date__gte=start_date,
+            start_time__date__lte=end_date,
+            status__in=['confirmed', 'completed']
+        ).annotate(
+            hour=ExtractHour('start_time')
+        ).values('hour').annotate(
+            total_bookings=Count('id'),
+            occupancy_rate=Avg('workspace__workspace_metrics__occupancy_rate')
+        ).order_by('hour')
+        
+        serializer = PeakHoursSerializer(bookings_by_hour, many=True)
         return Response(serializer.data)

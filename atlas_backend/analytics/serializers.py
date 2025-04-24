@@ -54,3 +54,8 @@ class WorkspacePopularitySerializer(serializers.Serializer):
     workspace_name = serializers.CharField()
     total_bookings = serializers.IntegerField()
     booking_percentage = serializers.FloatField()
+
+class PeakHoursSerializer(serializers.Serializer):
+    hour = serializers.IntegerField()
+    total_bookings = serializers.IntegerField()
+    occupancy_rate = serializers.FloatField()

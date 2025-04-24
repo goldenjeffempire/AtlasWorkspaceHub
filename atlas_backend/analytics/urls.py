@@ -20,5 +20,6 @@ urlpatterns = [
     path('booking-trends/', BookingTrendsView.as_view(), name='booking-trends'),
     path('user-activity/', UserActivityReportView.as_view(), name='user-activity'),
     path('workspace-popularity/', WorkspacePopularityView.as_view(), name='workspace-popularity'),
+    path('peak-hours/', PeakHoursView.as_view(), name='peak-hours'),
     path('', include(router.urls)),
 ]
