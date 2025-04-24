@@ -84,6 +84,13 @@ class BookingViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
+        # Check if this is a schema generation request
+        if getattr(self, 'swagger_fake_view', False):
+            return Booking.objects.none()
+            
+        if not user.is_authenticated:
+            return Booking.objects.none()
+            
         if user.role == 'admin':
             queryset = Booking.objects.all()
         else:
